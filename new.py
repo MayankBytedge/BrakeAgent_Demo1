@@ -27,7 +27,7 @@ if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
 
 st.set_page_config(
-    page_title="GeniusBreak AI - Brake System Engineering Assistant",
+    page_title="ByteBrake AI - Brake System Engineering Assistant",
     page_icon="🚗",
     layout="wide",
     initial_sidebar_state="expanded"
