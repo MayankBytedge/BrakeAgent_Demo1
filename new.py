@@ -1376,7 +1376,7 @@ Provide insights on:
 
     # Footer
     st.markdown("---")
-    st.markdown("**ByteBreak AI** - Advanced Brake System Engineering with Compliance Validation")
+    st.markdown("**ByteBrake AI** - Advanced Brake System Engineering with Compliance Validation")
     st.markdown("Enhanced with seasonal analysis, AI optimization, and interactive workshop")
 
 if __name__ == "__main__":
