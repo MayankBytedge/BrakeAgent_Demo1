@@ -831,7 +831,7 @@ Let me collect some information about your motorcycle. I need 5 specifications."
 
 # Main Streamlit Application
 def main():
-    st.title("ByteBreak AI - Advanced Brake System Engineering Assistant")
+    st.title("ByteBrake AI - Advanced Brake System Engineering Assistant")
     st.markdown("Comprehensive brake analysis with physics-based temperature calculations and compliance validation")
     
     # Initialize session state
