@@ -831,7 +831,7 @@ Let me collect some information about your motorcycle. I need 5 specifications."
 
 # Main Streamlit Application
 def main():
-    st.title("GeniusBreak AI - Advanced Brake System Engineering Assistant")
+    st.title("ByteBreak AI - Advanced Brake System Engineering Assistant")
     st.markdown("Comprehensive brake analysis with physics-based temperature calculations and compliance validation")
     
     # Initialize session state
@@ -1376,7 +1376,7 @@ Provide insights on:
 
     # Footer
     st.markdown("---")
-    st.markdown("**GeniusBreak AI** - Advanced Brake System Engineering with Compliance Validation")
+    st.markdown("**ByteBreak AI** - Advanced Brake System Engineering with Compliance Validation")
     st.markdown("Enhanced with seasonal analysis, AI optimization, and interactive workshop")
 
 if __name__ == "__main__":
