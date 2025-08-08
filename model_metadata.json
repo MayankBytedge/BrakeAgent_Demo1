@@ -1,0 +1,20 @@
+{
+    "model_type": "RandomForestRegressor",
+    "n_estimators": 100,
+    "random_state": 42,
+    "r2_score": 0.9481101045200588,
+    "mse": 5.652948810360361,
+    "feature_names": [
+        "distance_km"
+    ],
+    "target_name": "speed",
+    "training_data_size": 111030,
+    "distance_range": {
+        "min": 0.03597,
+        "max": 6286.865589999999
+    },
+    "speed_range": {
+        "min": 0.0194384449,
+        "max": 51.8812094381
+    }
+}
