@@ -857,7 +857,7 @@ def generate_pdf_report(bike_specs: Dict[str, Any], brake_params: Dict[str, Any]
     """Generate comprehensive PDF report"""
     # Create a simple text-based report (for demonstration)
     report_content = f"""
-GENIUSBREAK AI - COMPREHENSIVE BRAKE ANALYSIS REPORT
+ByteBrake AI - COMPREHENSIVE BRAKE ANALYSIS REPORT
 Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 
 MOTORCYCLE SPECIFICATIONS:
@@ -902,7 +902,7 @@ RECOMMENDATIONS:
     return report_content.encode('utf-8')
 
 # Conversational AI Agent (existing)
-class GeniusBreakAI:
+class GeniusBrakeAI:
     def __init__(self):
         self.model = None
         self.bike_specs = {}
@@ -931,7 +931,7 @@ class GeniusBreakAI:
         ]
 
     def get_greeting(self) -> str:
-        return """Welcome to GeniusBreak AI - Advanced Brake System Engineering Assistant
+        return """Welcome to ByteBrake AI - Advanced Brake System Engineering Assistant
 
 I will help you analyze your motorcycle brake system with:
 
@@ -1017,12 +1017,12 @@ Let me collect some information about your motorcycle. I need 5 specifications."
 
 # Main Streamlit Application
 def main():
-    st.title("ByteBreak AI - Advanced Brake System Engineering Assistant")
+    st.title("ByteBrake AI - Advanced Brake System Engineering Assistant")
     st.markdown("Comprehensive brake analysis with physics-based temperature calculations and compliance validation")
 
     # Initialize session state
     if 'ai_agent' not in st.session_state:
-        st.session_state.ai_agent = GeniusBreakAI()
+        st.session_state.ai_agent = GeniusBrakeAI()
     if 'chat_history' not in st.session_state:
         st.session_state.chat_history = []
     if 'bike_specs' not in st.session_state:
@@ -1663,7 +1663,7 @@ def main():
 
     # Footer
     st.markdown("---")
-    st.markdown("**ByteBreak AI** - Advanced Brake System Engineering with Compliance Validation")
+    st.markdown("**ByteBrake AI** - Advanced Brake System Engineering with Compliance Validation")
     st.markdown("Enhanced with seasonal analysis, AI optimization, interactive workshop, and speed pattern analysis")
 
 if __name__ == "__main__":
