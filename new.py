@@ -1,6 +1,8 @@
 
 #!/usr/bin/env python3
 
+import google.generativeai as genai
+from dotenv import load_dotenv
 import streamlit as st
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
@@ -19,8 +21,6 @@ import base64
 
 warnings.filterwarnings('ignore')
 
-from dotenv import load_dotenv
-import google.generativeai as genai
 
 # Load environment variables
 load_dotenv()
@@ -60,6 +60,8 @@ SPEED_KNOWLEDGE_BASE = {
 }
 
 # Enhanced constants with seasonal weather
+
+
 class BrakeConstants:
     # Physical constants
     C_P = 470  # Specific heat capacity (J/kg·K)
@@ -97,6 +99,8 @@ class BrakeConstants:
     }
 
 # ISO and Indian Standards Compliance
+
+
 class ComplianceStandards:
     ISO_STANDARDS = {
         'min_rotor_diameter_mm': 160,
@@ -117,6 +121,8 @@ class ComplianceStandards:
     }
 
 # NEW: Speed Pattern Generator Function (existing)
+
+
 def generate_speed_pattern_for_distance(distance_km: int, riding_style: str = 'mixed') -> Tuple[List[float], List[float]]:
     """
     Generate speed pattern for a given distance range based on riding style
@@ -131,7 +137,8 @@ def generate_speed_pattern_for_distance(distance_km: int, riding_style: str = 'm
     pattern = pattern_data['pattern']
 
     # Generate distance points
-    num_points = min(max(50, distance_km // 200), 500)  # Between 50-500 points based on distance
+    # Between 50-500 points based on distance
+    num_points = min(max(50, distance_km // 200), 500)
     distance_points = np.linspace(0, distance_km, num_points)
 
     # Generate speed pattern
@@ -155,8 +162,10 @@ def generate_speed_pattern_for_distance(distance_km: int, riding_style: str = 'm
     return distance_points.tolist(), speed_points
 
 # NEW: Temperature Calculation Based on Speed (existing)
+
+
 def calculate_temperature_from_speed(speed_kmh: float, brake_params: Dict[str, Any],
-                                   ambient_temp: float = 35) -> float:
+                                     ambient_temp: float = 35) -> float:
     """
     Calculate brake temperature rise based on speed
     """
@@ -169,7 +178,8 @@ def calculate_temperature_from_speed(speed_kmh: float, brake_params: Dict[str, A
     # Heat generation (simplified model)
     pad_mass = brake_params.get('pad_mass_kg', 0.5)
     if pad_mass > 0:
-        temp_rise = kinetic_energy / (pad_mass * BrakeConstants.C_P * 10)  # Simplified
+        temp_rise = kinetic_energy / \
+            (pad_mass * BrakeConstants.C_P * 10)  # Simplified
     else:
         temp_rise = speed_kmh * 0.8  # Fallback calculation
 
@@ -183,18 +193,21 @@ def calculate_temperature_from_speed(speed_kmh: float, brake_params: Dict[str, A
     return min(final_temp, 400)  # Cap at 400°C for realism
 
 # NEW: Create Speed vs Distance Chart with Temperature (existing)
+
+
 def create_speed_distance_temperature_chart(distance_km: int, riding_style: str,
-                                          brake_params: Dict[str, Any]) -> go.Figure:
+                                            brake_params: Dict[str, Any]) -> go.Figure:
     """
     Create combined chart showing speed vs distance and corresponding temperature
     """
     # Generate speed pattern
-    distances, speeds = generate_speed_pattern_for_distance(distance_km, riding_style)
+    distances, speeds = generate_speed_pattern_for_distance(
+        distance_km, riding_style)
 
     # Calculate temperatures for each speed point
     ambient_temp = BrakeConstants.AMBIENT_TEMPS['summer']  # Default to summer
     temperatures = [calculate_temperature_from_speed(speed, brake_params, ambient_temp)
-                   for speed in speeds]
+                    for speed in speeds]
 
     # Create subplot with secondary y-axis
     fig = make_subplots(specs=[[{"secondary_y": True}]])
@@ -202,16 +215,16 @@ def create_speed_distance_temperature_chart(distance_km: int, riding_style: str,
     # Speed trace
     fig.add_trace(
         go.Scatter(x=distances, y=speeds, name="Speed (km/h)",
-                  line=dict(color='#1f77b4', width=2),
-                  mode='lines'),
+                   line=dict(color='#1f77b4', width=2),
+                   mode='lines'),
         secondary_y=False,
     )
 
     # Temperature trace
     fig.add_trace(
         go.Scatter(x=distances, y=temperatures, name="Temperature (°C)",
-                  line=dict(color='#ff7f0e', width=2),
-                  mode='lines'),
+                   line=dict(color='#ff7f0e', width=2),
+                   mode='lines'),
         secondary_y=True,
     )
 
@@ -230,20 +243,23 @@ def create_speed_distance_temperature_chart(distance_km: int, riding_style: str,
     return fig
 
 # NEW: Create Temperature vs Distance Chart (NEW ADDITION)
+
+
 def create_temperature_distance_chart(distance_km: int, riding_style: str,
-                                    brake_params: Dict[str, Any]) -> go.Figure:
+                                      brake_params: Dict[str, Any]) -> go.Figure:
     """
     Create dedicated Temperature vs Distance chart based on speed patterns
     """
     # Generate speed pattern
-    distances, speeds = generate_speed_pattern_for_distance(distance_km, riding_style)
+    distances, speeds = generate_speed_pattern_for_distance(
+        distance_km, riding_style)
 
     # Calculate temperatures for different weather conditions
     weather_temps = {}
     for weather in ['summer', 'winter', 'rainy', 'autumn']:
         ambient_temp = BrakeConstants.AMBIENT_TEMPS[weather]
         temperatures = [calculate_temperature_from_speed(speed, brake_params, ambient_temp)
-                       for speed in speeds]
+                        for speed in speeds]
         weather_temps[weather] = temperatures
 
     # Create the chart
@@ -252,7 +268,7 @@ def create_temperature_distance_chart(distance_km: int, riding_style: str,
     # Colors for different seasons
     colors = {
         'summer': '#FF4444',    # Red
-        'winter': '#4444FF',    # Blue  
+        'winter': '#4444FF',    # Blue
         'rainy': '#44FF44',     # Green
         'autumn': '#FF8844'     # Orange
     }
@@ -267,7 +283,7 @@ def create_temperature_distance_chart(distance_km: int, riding_style: str,
             line=dict(color=colors[weather], width=3),
             marker=dict(size=4),
             hovertemplate=f"<b>{weather.title()} Season</b><br>" +
-                         "Distance: %{x:.1f} km<br>" +
+            "Distance: %{x:.1f} km<br>" +
                          "Temperature: %{y:.1f}°C<extra></extra>"
         ))
 
@@ -283,6 +299,8 @@ def create_temperature_distance_chart(distance_km: int, riding_style: str,
     return fig
 
 # Utility functions (existing)
+
+
 def clean_for_display(text: str) -> str:
     if not text:
         return ""
@@ -295,6 +313,7 @@ def clean_for_display(text: str) -> str:
     for old, new in replacements.items():
         cleaned = cleaned.replace(old, new)
     return cleaned
+
 
 def clean_text_for_pdf(text: str) -> str:
     if not text:
@@ -314,6 +333,8 @@ def clean_text_for_pdf(text: str) -> str:
     return text
 
 # Brake calculations (existing)
+
+
 def choose_pad_type(cc: float, hp: float) -> str:
     if cc < 200:
         return "organic"
@@ -323,6 +344,7 @@ def choose_pad_type(cc: float, hp: float) -> str:
         return "ceramic"
     else:
         return "organic"
+
 
 def get_stopping_time(max_speed_kmh: float) -> float:
     if max_speed_kmh <= 50:
@@ -334,6 +356,7 @@ def get_stopping_time(max_speed_kmh: float) -> float:
     else:
         return 6.0
 
+
 def calculate_brake_parameters(bike_specs: Dict[str, Any], custom_params: Dict[str, Any] = None) -> Dict[str, Any]:
     # Basic conversions
     wheel_diameter_m = bike_specs['wheel_diameter_inch'] * 0.0254
@@ -341,7 +364,8 @@ def calculate_brake_parameters(bike_specs: Dict[str, Any], custom_params: Dict[s
     max_speed_ms = bike_specs['max_speed_kmh'] / 3.6
 
     # Material selection (can be overridden by custom params)
-    pad_type = choose_pad_type(bike_specs['engine_cc'], bike_specs['horsepower'])
+    pad_type = choose_pad_type(
+        bike_specs['engine_cc'], bike_specs['horsepower'])
     if custom_params and 'pad_type' in custom_params:
         pad_type = custom_params['pad_type']
 
@@ -367,18 +391,22 @@ def calculate_brake_parameters(bike_specs: Dict[str, Any], custom_params: Dict[s
 
     # Pad calculations (can be customized)
     pad_area_mm2 = rotor_diameter_mm * 25
-    pad_thickness_mm = custom_params.get('pad_thickness_mm', 10.0) if custom_params else 10.0
-    pad_mass_kg = (pad_area_mm2 * pad_thickness_mm * BrakeConstants.DENSITY) / 1e9
+    pad_thickness_mm = custom_params.get(
+        'pad_thickness_mm', 10.0) if custom_params else 10.0
+    pad_mass_kg = (pad_area_mm2 * pad_thickness_mm *
+                   BrakeConstants.DENSITY) / 1e9
 
     # Radiative area calculation
     rotor_thickness_m = 0.012
-    radiative_area_m2 = math.pi * (rotor_diameter_mm/1000) * rotor_thickness_m * 2
+    radiative_area_m2 = math.pi * \
+        (rotor_diameter_mm/1000) * rotor_thickness_m * 2
 
     # Heat calculations
     max_temp_rise = kinetic_energy / (pad_mass_kg * BrakeConstants.C_P)
 
     # Stopping distance
-    mu = custom_params.get('friction_coefficient', BrakeConstants.MU) if custom_params else BrakeConstants.MU
+    mu = custom_params.get(
+        'friction_coefficient', BrakeConstants.MU) if custom_params else BrakeConstants.MU
     stopping_distance_m = (test_velocity_ms ** 2) / (2 * mu * 9.81)
 
     return {
@@ -400,6 +428,8 @@ def calculate_brake_parameters(bike_specs: Dict[str, Any], custom_params: Dict[s
     }
 
 # Compliance Validation Agent (existing)
+
+
 def validate_brake_compliance(brake_params: Dict[str, Any]) -> Dict[str, Any]:
     iso_checks = {}
     indian_checks = {}
@@ -423,7 +453,8 @@ def validate_brake_compliance(brake_params: Dict[str, Any]) -> Dict[str, Any]:
     )
 
     # Check friction coefficient
-    material_friction = BrakeConstants.MATERIAL_LIMITS.get(pad_type, {}).get('friction_coeff', 0.4)
+    material_friction = BrakeConstants.MATERIAL_LIMITS.get(
+        pad_type, {}).get('friction_coeff', 0.4)
     iso_checks['friction_coefficient_compliant'] = (
         ComplianceStandards.ISO_STANDARDS['min_friction_coefficient'] <= material_friction
         <= ComplianceStandards.ISO_STANDARDS['max_friction_coefficient']
@@ -438,18 +469,23 @@ def validate_brake_compliance(brake_params: Dict[str, Any]) -> Dict[str, Any]:
     # Generate recommendations
     if not iso_checks['rotor_diameter_compliant']:
         if rotor_diameter < ComplianceStandards.ISO_STANDARDS['min_rotor_diameter_mm']:
-            recommendations.append(f"Increase rotor diameter to minimum {ComplianceStandards.ISO_STANDARDS['min_rotor_diameter_mm']}mm")
+            recommendations.append(
+                f"Increase rotor diameter to minimum {ComplianceStandards.ISO_STANDARDS['min_rotor_diameter_mm']}mm")
         else:
-            recommendations.append(f"Reduce rotor diameter to maximum {ComplianceStandards.ISO_STANDARDS['max_rotor_diameter_mm']}mm")
+            recommendations.append(
+                f"Reduce rotor diameter to maximum {ComplianceStandards.ISO_STANDARDS['max_rotor_diameter_mm']}mm")
 
     if not iso_checks['pad_thickness_compliant']:
-        recommendations.append(f"Adjust pad thickness to {ComplianceStandards.ISO_STANDARDS['min_pad_thickness_mm']}-{ComplianceStandards.ISO_STANDARDS['max_pad_thickness_mm']}mm range")
+        recommendations.append(
+            f"Adjust pad thickness to {ComplianceStandards.ISO_STANDARDS['min_pad_thickness_mm']}-{ComplianceStandards.ISO_STANDARDS['max_pad_thickness_mm']}mm range")
 
     if not indian_checks['monsoon_ready']:
-        recommendations.append("Consider sintered or ceramic pads for better monsoon performance")
+        recommendations.append(
+            "Consider sintered or ceramic pads for better monsoon performance")
 
     if not indian_checks['dust_resistant']:
-        recommendations.append("Upgrade to sintered or ceramic pads for Indian road conditions")
+        recommendations.append(
+            "Upgrade to sintered or ceramic pads for Indian road conditions")
 
     return {
         'iso_compliance': iso_checks,
@@ -459,8 +495,10 @@ def validate_brake_compliance(brake_params: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 # AI-powered parameter optimization (existing)
+
+
 def get_ai_optimization_suggestions(brake_params: Dict[str, Any], compliance_results: Dict[str, Any],
-                                  bike_specs: Dict[str, Any]) -> Dict[str, Any]:
+                                    bike_specs: Dict[str, Any]) -> Dict[str, Any]:
     if not GEMINI_API_KEY:
         return {'optimized_params': brake_params, 'ai_explanation': 'AI optimization unavailable - no API key'}
 
@@ -518,8 +556,10 @@ def get_ai_optimization_suggestions(brake_params: Dict[str, Any], compliance_res
         }
 
 # Temperature simulation with enhanced physics (existing - with updated RUL cap)
+
+
 def simulate_temperature_and_wear(brake_params: Dict[str, Any], weather: str,
-                                wheel: str, driving_style: str, distance_km: int = 25000) -> Dict[str, Any]:
+                                  wheel: str, driving_style: str, distance_km: int = 25000) -> Dict[str, Any]:
     # Initial conditions
     ambient_temp = BrakeConstants.AMBIENT_TEMPS[weather]
     current_temp = ambient_temp + 10
@@ -562,7 +602,8 @@ def simulate_temperature_and_wear(brake_params: Dict[str, Any], weather: str,
         if step > 0:
             for event in range(brake_events_per_step):
                 # Velocity calculation
-                velocity = brake_params['test_velocity_ms'] * min(1.0, step / steps)
+                velocity = brake_params['test_velocity_ms'] * \
+                    min(1.0, step / steps)
 
                 # Heat generation
                 energy_dissipated = 0.5 * velocity**2 * braking_intensity * wheel_factor
@@ -571,24 +612,26 @@ def simulate_temperature_and_wear(brake_params: Dict[str, Any], weather: str,
 
                 # Convective cooling
                 h_conv = 8.318 * (velocity ** 0.8) if velocity > 0 else 1.0
-                convective_loss = h_conv * radiative_area * (current_temp - ambient_temp) * 0.1
+                convective_loss = h_conv * radiative_area * \
+                    (current_temp - ambient_temp) * 0.1
 
                 # Radiative cooling
                 temp_kelvin = current_temp + 273.15
                 ambient_kelvin = ambient_temp + 273.15
                 radiative_loss = (BrakeConstants.SIGMA * BrakeConstants.EPSILON * radiative_area *
-                                (temp_kelvin**4 - ambient_kelvin**4) * 0.1)
+                                  (temp_kelvin**4 - ambient_kelvin**4) * 0.1)
 
                 # Temperature update
                 total_heat_loss = convective_loss + radiative_loss
                 if pad_mass > 0:
-                    current_temp -= total_heat_loss / (pad_mass * BrakeConstants.C_P)
+                    current_temp -= total_heat_loss / \
+                        (pad_mass * BrakeConstants.C_P)
                 current_temp = max(current_temp, ambient_temp)
 
                 # Wear calculation with temperature dependency
                 temp_factor = 1.0 + max(0, (current_temp - 100) / 100)
                 step_wear_mm = (base_wear_rate * distance_per_step * braking_intensity *
-                              wheel_factor * temp_factor * weather_factor['wear_mult'])
+                                wheel_factor * temp_factor * weather_factor['wear_mult'])
                 total_wear_mm += step_wear_mm
 
         temperatures.append(current_temp)
@@ -598,9 +641,11 @@ def simulate_temperature_and_wear(brake_params: Dict[str, Any], weather: str,
     usable_thickness = 8.0
     if total_wear_mm > 0:
         wear_rate_per_km = total_wear_mm / distance_km
-        remaining_life_km = (usable_thickness - total_wear_mm) / wear_rate_per_km
+        remaining_life_km = (usable_thickness -
+                             total_wear_mm) / wear_rate_per_km
         # Updated to use MAX_RUL_KM = 30000
-        rul_km = max(8000, min(BrakeConstants.MAX_RUL_KM, int(remaining_life_km / BrakeConstants.RUL_CORRECTION_FACTOR)))
+        rul_km = max(8000, min(BrakeConstants.MAX_RUL_KM, int(
+            remaining_life_km / BrakeConstants.RUL_CORRECTION_FACTOR)))
     else:
         rul_km = int(40000 / BrakeConstants.RUL_CORRECTION_FACTOR)
 
@@ -623,6 +668,8 @@ def simulate_temperature_and_wear(brake_params: Dict[str, Any], weather: str,
     }
 
 # Enhanced simulation for different speeds (existing - UNCHANGED)
+
+
 def simulate_temp_vs_wear_different_speeds(brake_params: Dict[str, Any], weather: str = 'summer') -> Dict[str, Any]:
     """Simulate temperature vs wear for different speeds as shown in the provided graph"""
     max_speed_kmh = brake_params.get('test_velocity_ms', 20) * 3.6
@@ -646,13 +693,15 @@ def simulate_temp_vs_wear_different_speeds(brake_params: Dict[str, Any], weather
 
         # Temperature range from ambient to material limit
         temp_range = np.linspace(ambient_temp,
-                               BrakeConstants.MATERIAL_LIMITS[pad_type]['max_temp'] * 0.8, 20)
+                                 BrakeConstants.MATERIAL_LIMITS[pad_type]['max_temp'] * 0.8, 20)
 
         for temp in temp_range:
             # Calculate wear based on temperature and speed
             speed_factor = (speed_ms / 20) ** 1.5  # Non-linear speed effect
-            temp_factor = 1.0 + ((temp - ambient_temp) / 100) ** 1.2  # Exponential temp effect
-            wear_mg = base_wear_rate * speed_factor * temp_factor * 10  # Convert to mg scale
+            # Exponential temp effect
+            temp_factor = 1.0 + ((temp - ambient_temp) / 100) ** 1.2
+            wear_mg = base_wear_rate * speed_factor * \
+                temp_factor * 10  # Convert to mg scale
 
             temperatures.append(temp)
             wear_values.append(wear_mg)
@@ -667,6 +716,8 @@ def simulate_temp_vs_wear_different_speeds(brake_params: Dict[str, Any], weather
     return results
 
 # Comprehensive simulation runner (existing)
+
+
 def run_comprehensive_simulation(brake_params: Dict[str, Any], distance_km: int = 25000) -> Dict[str, Any]:
     results = {}
 
@@ -687,10 +738,13 @@ def run_comprehensive_simulation(brake_params: Dict[str, Any], distance_km: int 
     return results
 
 # Visualization functions (existing)
+
+
 def create_weather_specific_charts(simulation_results: Dict[str, Any], selected_weather: str = None) -> Dict[str, go.Figure]:
     """Create charts for specific weather condition"""
     charts = {}
-    weather_conditions = [selected_weather] if selected_weather else ['summer', 'winter', 'rainy', 'autumn']
+    weather_conditions = [selected_weather] if selected_weather else [
+        'summer', 'winter', 'rainy', 'autumn']
 
     for weather in weather_conditions:
         # Temperature chart for this weather
@@ -754,6 +808,8 @@ def create_weather_specific_charts(simulation_results: Dict[str, Any], selected_
     return charts
 
 # UNCHANGED: Keep the original brake pad wear vs temperature chart exactly as it is
+
+
 def create_speed_based_temp_wear_chart(brake_params: Dict[str, Any]) -> go.Figure:
     """Create temperature vs wear chart for different speeds - UNCHANGED"""
     # Get simulation data for different speeds
@@ -761,7 +817,8 @@ def create_speed_based_temp_wear_chart(brake_params: Dict[str, Any]) -> go.Figur
 
     fig = go.Figure()
 
-    colors = ['#FF0000', '#00FF00', '#0000FF']  # Red, Green, Blue for the three speeds
+    # Red, Green, Blue for the three speeds
+    colors = ['#FF0000', '#00FF00', '#0000FF']
     markers = ['square', 'circle', 'diamond']
 
     for i, (speed_key, data) in enumerate(speed_data.items()):
@@ -788,26 +845,33 @@ def create_speed_based_temp_wear_chart(brake_params: Dict[str, Any]) -> go.Figur
 
     return fig
 
+
 def create_pentagon_performance_chart(brake_params: Dict[str, Any], simulation_results: Dict[str, Any]) -> go.Figure:
     """Create pentagon radar chart for overall brake performance"""
     if not simulation_results:
         return go.Figure()
 
     # Calculate performance metrics
-    all_temps = [result['max_temperature'] for result in simulation_results.values()]
+    all_temps = [result['max_temperature']
+        for result in simulation_results.values()]
     all_ruls = [result['rul_km'] for result in simulation_results.values()]
-    all_wear = [result['final_wear_mm'] for result in simulation_results.values()]
+    all_wear = [result['final_wear_mm']
+        for result in simulation_results.values()]
 
     # Fixed pentagon metrics calculation (0-100 scale)
-    thermal_management = max(0, min(100, 100 - (np.mean(all_temps) - 50) * 0.8))
+    thermal_management = max(
+        0, min(100, 100 - (np.mean(all_temps) - 50) * 0.8))
     durability = max(0, min(100, (np.mean(all_ruls) - 8000) / 400))
 
     # Fixed wear resistance calculation
     avg_wear_rate = np.mean(all_wear) / 25000  # Normalize by distance
-    wear_resistance = max(0, min(100, 100 - (avg_wear_rate * 1000)))  # Scale properly
+    wear_resistance = max(
+        0, min(100, 100 - (avg_wear_rate * 1000)))  # Scale properly
 
-    stopping_power = max(0, min(100, brake_params.get('brake_force_n', 0) / 20))
-    weather_performance = 85 if brake_params.get('pad_type') == 'sintered' else (90 if brake_params.get('pad_type') == 'ceramic' else 70)
+    stopping_power = max(
+        0, min(100, brake_params.get('brake_force_n', 0) / 20))
+    weather_performance = 85 if brake_params.get('pad_type') == 'sintered' else (
+        90 if brake_params.get('pad_type') == 'ceramic' else 70)
 
     metrics = {
         'Thermal Management': thermal_management,
@@ -852,8 +916,10 @@ def create_pentagon_performance_chart(brake_params: Dict[str, Any], simulation_r
     return fig
 
 # PDF Report Generation (existing)
+
+
 def generate_pdf_report(bike_specs: Dict[str, Any], brake_params: Dict[str, Any],
-                       simulation_results: Dict[str, Any], compliance_results: Dict[str, Any]) -> bytes:
+                        simulation_results: Dict[str, Any], compliance_results: Dict[str, Any]) -> bytes:
     """Generate comprehensive PDF report"""
     # Create a simple text-based report (for demonstration)
     report_content = f"""
@@ -878,7 +944,8 @@ PERFORMANCE ANALYSIS:
 """
 
     if simulation_results:
-        avg_temp = np.mean([r['max_temperature'] for r in simulation_results.values()])
+        avg_temp = np.mean([r['max_temperature']
+                           for r in simulation_results.values()])
         avg_rul = np.mean([r['rul_km'] for r in simulation_results.values()])
 
         report_content += f"""
@@ -902,6 +969,8 @@ RECOMMENDATIONS:
     return report_content.encode('utf-8')
 
 # Conversational AI Agent (existing)
+
+
 class GeniusBrakeAI:
     def __init__(self):
         self.model = None
@@ -978,10 +1047,12 @@ Let me collect some information about your motorcycle. I need 5 specifications."
         # Update session state
         st.session_state['bike_specs'] = self.bike_specs.copy()
         st.session_state['specs_collected'] = True
-        st.session_state['auto_redirect_analytics'] = True  # Auto-redirect flag
+        # Auto-redirect flag
+        st.session_state['auto_redirect_analytics'] = True
 
         summary = "Excellent! All specifications collected:\n\n"
-        labels = ['Wheel Diameter', 'Total Weight', 'Max Speed', 'Engine CC', 'Horsepower']
+        labels = ['Wheel Diameter', 'Total Weight',
+            'Max Speed', 'Engine CC', 'Horsepower']
         units = ['inches', 'kg', 'km/h', 'CC', 'HP']
 
         for i, (spec, value) in enumerate(self.bike_specs.items()):
@@ -1016,9 +1087,12 @@ Let me collect some information about your motorcycle. I need 5 specifications."
         return "All questions completed!"
 
 # Main Streamlit Application
+
+
 def main():
     st.title("ByteBrake AI - Advanced Brake System Engineering Assistant")
-    st.markdown("Comprehensive brake analysis with physics-based temperature calculations and compliance validation")
+    st.markdown(
+        "Comprehensive brake analysis with physics-based temperature calculations and compliance validation")
 
     # Initialize session state
     if 'ai_agent' not in st.session_state:
@@ -1072,7 +1146,8 @@ def main():
                 st.info(f"○ {item}")
 
     # Main interface with tabs (including Workshop)
-    tabs = st.tabs(["💬 Conversation", "📊 Analytics", "✅ Validation & Optimization", "🔧 Workshop", "📄 Reports"])
+    tabs = st.tabs(["💬 Conversation", "📊 Analytics",
+                   "✅ Validation & Optimization", "🔧 Workshop", "📄 Reports"])
 
     # Auto-select Analytics tab if redirect is triggered
     selected_tab_index = st.session_state.selected_tab if st.session_state.auto_redirect_analytics else None
@@ -1083,7 +1158,8 @@ def main():
         # Display greeting if first time
         if not st.session_state.chat_history:
             greeting = st.session_state.ai_agent.get_greeting()
-            st.session_state.chat_history.append({"role": "assistant", "content": greeting})
+            st.session_state.chat_history.append(
+                {"role": "assistant", "content": greeting})
 
         # Display chat history
         for message in st.session_state.chat_history:
@@ -1094,10 +1170,12 @@ def main():
 
         # Chat input
         if user_input := st.chat_input("Type your message..."):
-            st.session_state.chat_history.append({"role": "user", "content": user_input})
+            st.session_state.chat_history.append(
+                {"role": "user", "content": user_input})
             with st.spinner("Processing..."):
                 response = st.session_state.ai_agent.process_input(user_input)
-                st.session_state.chat_history.append({"role": "assistant", "content": response})
+                st.session_state.chat_history.append(
+                    {"role": "assistant", "content": response})
 
             # Check for auto-redirect
             if st.session_state.auto_redirect_analytics:
@@ -1111,7 +1189,8 @@ def main():
         # Auto-calculate brake parameters if specs are collected
         if st.session_state.specs_collected and not st.session_state.brake_params:
             with st.spinner("Calculating brake parameters..."):
-                st.session_state.brake_params = calculate_brake_parameters(st.session_state.bike_specs)
+                st.session_state.brake_params = calculate_brake_parameters(
+                    st.session_state.bike_specs)
             st.success("Brake parameters calculated!")
 
         # Display brake parameters
@@ -1121,37 +1200,47 @@ def main():
 
             params = st.session_state.brake_params
             with col1:
-                st.metric("Rotor Diameter", f"{params.get('rotor_diameter_mm', 0):.1f} mm")
-                st.metric("Pad Type", params.get('pad_type', 'Unknown').title())
+                st.metric("Rotor Diameter",
+                          f"{params.get('rotor_diameter_mm', 0):.1f} mm")
+                st.metric("Pad Type", params.get(
+                    'pad_type', 'Unknown').title())
 
             with col2:
-                st.metric("Pad Thickness", f"{params.get('pad_thickness_mm', 0):.1f} mm")
-                st.metric("Brake Force", f"{params.get('brake_force_n', 0):.0f} N")
+                st.metric("Pad Thickness",
+                          f"{params.get('pad_thickness_mm', 0):.1f} mm")
+                st.metric("Brake Force",
+                          f"{params.get('brake_force_n', 0):.0f} N")
 
             with col3:
-                st.metric("Stopping Distance", f"{params.get('stopping_distance_m', 0):.1f} m")
-                st.metric("Test Velocity", f"{params.get('test_velocity_ms', 0)*3.6:.0f} km/h")
+                st.metric("Stopping Distance",
+                          f"{params.get('stopping_distance_m', 0):.1f} m")
+                st.metric("Test Velocity",
+                          f"{params.get('test_velocity_ms', 0)*3.6:.0f} km/h")
 
             with col4:
-                st.metric("Radiative Area", f"{params.get('radiative_area_m2', 0):.4f} m²")
-                st.metric("Pad Mass", f"{params.get('pad_mass_kg', 0)*1000:.1f} g")
+                st.metric("Radiative Area",
+                          f"{params.get('radiative_area_m2', 0):.4f} m²")
+                st.metric(
+                    "Pad Mass", f"{params.get('pad_mass_kg', 0)*1000:.1f} g")
 
             # NEW: Speed vs Distance Analysis Section (existing)
             st.subheader("🚀 Speed vs Distance Analysis with Brake Temperature")
-            st.markdown("Generate speed patterns for user-specified distance ranges and analyze corresponding brake temperatures.")
+            st.markdown(
+                "Generate speed patterns for user-specified distance ranges and analyze corresponding brake temperatures.")
 
             # Controls for speed pattern generation
             col1, col2, col3 = st.columns(3)
 
             with col1:
                 distance_range = st.number_input("Distance Range (km)",
-                                               min_value=100, max_value=50000, value=10000, step=500,
-                                               help="Enter the distance range you want to analyze (e.g., 10000 km or 25000 km)")
+                                                 min_value=100, max_value=50000, value=10000, step=500,
+                                                 help="Enter the distance range you want to analyze (e.g., 10000 km or 25000 km)")
 
             with col2:
                 riding_style = st.selectbox("Riding Style",
-                                          options=['mixed', 'city_traffic', 'highway', 'aggressive'],
-                                          help="Select riding pattern for speed simulation")
+                                            options=[
+                                                'mixed', 'city_traffic', 'highway', 'aggressive'],
+                                            help="Select riding pattern for speed simulation")
 
             with col3:
                 if st.button("🔬 Generate Speed Analysis", type="primary"):
@@ -1163,18 +1252,21 @@ def main():
 
                         st.session_state['speed_chart'] = speed_chart
                         st.session_state['speed_analysis_done'] = True
-                        st.success(f"✅ Speed analysis complete for {distance_range:,} km!")
+                        st.success(
+                            f"✅ Speed analysis complete for {distance_range:,} km!")
 
             # Display speed analysis chart if generated
             if st.session_state.get('speed_analysis_done', False) and 'speed_chart' in st.session_state:
-                st.plotly_chart(st.session_state['speed_chart'], use_container_width=True)
+                st.plotly_chart(
+                    st.session_state['speed_chart'], use_container_width=True)
 
                 # Speed pattern insights
                 st.markdown("### 📊 Speed Pattern Insights")
                 col1, col2, col3 = st.columns(3)
 
                 with col1:
-                    st.info(f"**Riding Style:** {riding_style.replace('_', ' ').title()}")
+                    st.info(
+                        f"**Riding Style:** {riding_style.replace('_', ' ').title()}")
 
                 with col2:
                     base_speed = SPEED_KNOWLEDGE_BASE[riding_style]['base_speed']
@@ -1186,22 +1278,24 @@ def main():
 
             # NEW: Temperature vs Distance Analysis Section
             st.subheader("🌡️ Temperature vs Distance Analysis")
-            st.markdown("Dedicated temperature analysis showing how brake temperature varies with distance across different seasons.")
+            st.markdown(
+                "Dedicated temperature analysis showing how brake temperature varies with distance across different seasons.")
 
             # Controls for temperature analysis
             col1, col2, col3 = st.columns(3)
 
             with col1:
                 temp_distance_range = st.number_input("Distance for Temp Analysis (km)",
-                                                    min_value=100, max_value=50000, value=5000, step=500,
-                                                    help="Distance range for temperature analysis",
-                                                    key="temp_distance")
+                                                      min_value=100, max_value=50000, value=5000, step=500,
+                                                      help="Distance range for temperature analysis",
+                                                      key="temp_distance")
 
             with col2:
                 temp_riding_style = st.selectbox("Riding Style for Temp Analysis",
-                                                options=['mixed', 'city_traffic', 'highway', 'aggressive'],
-                                                help="Select riding pattern for temperature simulation",
-                                                key="temp_riding_style")
+                                                 options=[
+                                                     'mixed', 'city_traffic', 'highway', 'aggressive'],
+                                                 help="Select riding pattern for temperature simulation",
+                                                 key="temp_riding_style")
 
             with col3:
                 if st.button("🌡️ Generate Temperature Analysis", type="primary"):
@@ -1213,11 +1307,24 @@ def main():
 
                         st.session_state['temp_chart'] = temp_chart
                         st.session_state['temp_analysis_done'] = True
-                        st.success(f"✅ Temperature analysis complete for {temp_distance_range:,} km!")
+                        st.success(
+                            f"✅ Temperature analysis complete for {temp_distance_range:,} km!")
 
             # Display temperature analysis chart if generated
             if st.session_state.get('temp_analysis_done', False) and 'temp_chart' in st.session_state:
-                st.plotly_chart(st.session_state['temp_chart'], use_container_width=True)
+                st.plotly_chart(
+                    st.session_state['temp_chart'], use_container_width=True)
+                gif_path = "fea.gif"
+                if os.path.exists(gif_path):
+                    st.markdown("### 🎬 FEA Animation Visualization")
+                    st.markdown("Finite Element Analysis animation showing brake temperature distribution")
+                    
+                    # Display the GIF
+                    with open(gif_path, "rb") as gif_file:
+                        gif_bytes = gif_file.read()
+                    st.image(gif_bytes, caption="FEA Temperature Distribution Animation", use_column_width=True)
+                else:
+                    st.warning("⚠️ fea.gif not found in the application directory. Please ensure the file is placed in the same folder as your Streamlit app.")
 
                 # Temperature analysis insights
                 st.markdown("### 🌡️ Temperature Analysis Insights")
@@ -1243,14 +1350,15 @@ def main():
             st.subheader("Seasonal Performance Analysis")
 
             # Sub-tabs for different weather conditions
-            weather_tabs = st.tabs(["☀️ Summer", "❄️ Winter", "🌧️ Rainy", "🍂 Autumn", "📈 Combined View"])
+            weather_tabs = st.tabs(
+                ["☀️ Summer", "❄️ Winter", "🌧️ Rainy", "🍂 Autumn", "📈 Combined View"])
 
             # Simulation controls
             col1, col2 = st.columns(2)
 
             with col1:
                 test_distance = st.number_input("Test Distance (km)",
-                                              min_value=1000, max_value=50000, value=25000, step=1000)
+                                                min_value=1000, max_value=50000, value=25000, step=1000)
 
             with col2:
                 if st.button("Run Comprehensive Analysis", type="primary"):
@@ -1258,7 +1366,8 @@ def main():
                         st.session_state.simulation_results = run_comprehensive_simulation(
                             st.session_state.brake_params, test_distance
                         )
-                    st.success(f"Analysis complete! {len(st.session_state.simulation_results)} scenarios analyzed.")
+                    st.success(
+                        f"Analysis complete! {len(st.session_state.simulation_results)} scenarios analyzed.")
 
             # Weather-specific analysis in sub-tabs
             if st.session_state.simulation_results:
@@ -1269,22 +1378,27 @@ def main():
                         st.markdown(f"### {season.title()} Season Analysis")
 
                         # Create charts for this specific weather
-                        weather_charts = create_weather_specific_charts(st.session_state.simulation_results, season)
+                        weather_charts = create_weather_specific_charts(
+                            st.session_state.simulation_results, season)
 
                         # Display temperature chart (full width, vertical)
                         temp_key = f"{season}_temperature"
                         if temp_key in weather_charts:
-                            st.plotly_chart(weather_charts[temp_key], use_container_width=True)
+                            st.plotly_chart(
+                                weather_charts[temp_key], use_container_width=True)
 
                         # Display wear chart (full width, vertical)
                         wear_key = f"{season}_wear"
                         if wear_key in weather_charts:
-                            st.plotly_chart(weather_charts[wear_key], use_container_width=True)
+                            st.plotly_chart(
+                                weather_charts[wear_key], use_container_width=True)
 
                 # Combined view tab
                 with weather_tabs[4]:
-                    st.markdown("### Temperature vs Brake Pad Wear (Different Initial Velocities)")
-                    speed_wear_chart = create_speed_based_temp_wear_chart(st.session_state.brake_params)
+                    st.markdown(
+                        "### Temperature vs Brake Pad Wear (Different Initial Velocities)")
+                    speed_wear_chart = create_speed_based_temp_wear_chart(
+                        st.session_state.brake_params)
                     st.plotly_chart(speed_wear_chart, use_container_width=True)
 
                 # Results summary table
@@ -1306,7 +1420,8 @@ def main():
 
         # Manual specification input fallback
         elif not st.session_state.specs_collected:
-            st.info("Please complete the conversation in the first tab to collect motorcycle specifications.")
+            st.info(
+                "Please complete the conversation in the first tab to collect motorcycle specifications.")
 
     # Keep all remaining tabs exactly as they were (Validation & Optimization, Workshop, Reports)
     with tabs[2]:
@@ -1316,7 +1431,8 @@ def main():
             # Run compliance validation
             if not st.session_state.compliance_results:
                 with st.spinner("Validating compliance with ISO and Indian standards..."):
-                    st.session_state.compliance_results = validate_brake_compliance(st.session_state.brake_params)
+                    st.session_state.compliance_results = validate_brake_compliance(
+                        st.session_state.brake_params)
 
             # Display compliance results
             st.subheader("Standards Compliance Check")
@@ -1340,7 +1456,8 @@ def main():
             if compliance['overall_compliant']:
                 st.success("🎉 All compliance checks passed!")
             else:
-                st.error("⚠️ Some compliance issues found. See recommendations below.")
+                st.error(
+                    "⚠️ Some compliance issues found. See recommendations below.")
 
             # Display recommendations
             if compliance['recommendations']:
@@ -1365,7 +1482,8 @@ def main():
 
             with col2:
                 if st.session_state.optimized_params and st.button("Apply Optimized Parameters"):
-                    st.session_state.brake_params.update(st.session_state.optimized_params['optimized_params'])
+                    st.session_state.brake_params.update(
+                        st.session_state.optimized_params['optimized_params'])
                     st.session_state.compliance_results = {}  # Reset to re-validate
                     st.session_state.simulation_results = {}  # Reset to re-run
                     st.success("Parameters updated! Please re-run analytics.")
@@ -1376,7 +1494,8 @@ def main():
                 st.subheader("AI Optimization Results")
                 opt = st.session_state.optimized_params
 
-                st.info(f"**AI Explanation:** {opt.get('ai_explanation', 'No explanation available')}")
+                st.info(
+                    f"**AI Explanation:** {opt.get('ai_explanation', 'No explanation available')}")
 
                 if 'ai_response' in opt and opt['ai_response']:
                     with st.expander("Full AI Response"):
@@ -1387,7 +1506,8 @@ def main():
                     st.subheader("Parameter Comparison")
                     comparison_data = []
                     for key in st.session_state.brake_params.keys():
-                        original = st.session_state.brake_params.get(key, 'N/A')
+                        original = st.session_state.brake_params.get(
+                            key, 'N/A')
                         optimized = opt['optimized_params'].get(key, 'N/A')
                         comparison_data.append({
                             'Parameter': clean_for_display(key),
@@ -1400,13 +1520,15 @@ def main():
                     st.dataframe(comparison_df, use_container_width=True)
 
         else:
-            st.info("Please complete brake parameter calculation in the Analytics tab first.")
+            st.info(
+                "Please complete brake parameter calculation in the Analytics tab first.")
 
     with tabs[3]:
         st.header("Workshop - Interactive Parameter Tuning")
 
         if st.session_state.brake_params:
-            st.markdown("### Adjust brake parameters using sliders to see real-time impact on performance")
+            st.markdown(
+                "### Adjust brake parameters using sliders to see real-time impact on performance")
 
             # Parameter sliders
             col1, col2 = st.columns(2)
@@ -1416,35 +1538,39 @@ def main():
 
                 # Pad type selector
                 pad_types = ['organic', 'sintered', 'ceramic']
-                current_pad_type = st.session_state.brake_params.get('pad_type', 'sintered')
+                current_pad_type = st.session_state.brake_params.get(
+                    'pad_type', 'sintered')
                 new_pad_type = st.selectbox("Pad Type", pad_types,
-                                          index=pad_types.index(current_pad_type) if current_pad_type in pad_types else 1)
+                                            index=pad_types.index(current_pad_type) if current_pad_type in pad_types else 1)
 
                 # Pad thickness slider
-                current_thickness = st.session_state.brake_params.get('pad_thickness_mm', 10.0)
+                current_thickness = st.session_state.brake_params.get(
+                    'pad_thickness_mm', 10.0)
                 new_thickness = st.slider("Pad Thickness (mm)",
-                                         min_value=4.0, max_value=20.0,
-                                         value=float(current_thickness), step=0.5)
+                                          min_value=4.0, max_value=20.0,
+                                          value=float(current_thickness), step=0.5)
 
                 # Friction coefficient slider
-                material_friction = BrakeConstants.MATERIAL_LIMITS.get(new_pad_type, {}).get('friction_coeff', 0.4)
+                material_friction = BrakeConstants.MATERIAL_LIMITS.get(
+                    new_pad_type, {}).get('friction_coeff', 0.4)
                 new_friction = st.slider("Friction Coefficient",
-                                        min_value=0.3, max_value=0.7,
-                                        value=float(material_friction), step=0.05)
+                                         min_value=0.3, max_value=0.7,
+                                         value=float(material_friction), step=0.05)
 
             with col2:
                 st.subheader("Rotor Parameters")
 
                 # Rotor diameter slider
-                current_diameter = st.session_state.brake_params.get('rotor_diameter_mm', 200.0)
+                current_diameter = st.session_state.brake_params.get(
+                    'rotor_diameter_mm', 200.0)
                 new_diameter = st.slider("Rotor Diameter (mm)",
-                                        min_value=160.0, max_value=350.0,
-                                        value=float(current_diameter), step=10.0)
+                                         min_value=160.0, max_value=350.0,
+                                         value=float(current_diameter), step=10.0)
 
                 # Test distance for workshop simulation
                 workshop_distance = st.slider("Test Distance (km)",
-                                             min_value=5000, max_value=30000,
-                                             value=15000, step=1000)
+                                              min_value=5000, max_value=30000,
+                                              value=15000, step=1000)
 
             # Apply workshop parameters
             workshop_params = {
@@ -1479,18 +1605,26 @@ def main():
                 with col1:
                     st.markdown("#### Original Parameters")
                     orig_params = st.session_state.brake_params
-                    st.metric("Rotor Diameter", f"{orig_params.get('rotor_diameter_mm', 0):.1f} mm")
-                    st.metric("Pad Type", orig_params.get('pad_type', 'Unknown').title())
-                    st.metric("Stopping Distance", f"{orig_params.get('stopping_distance_m', 0):.1f} m")
-                    st.metric("Brake Force", f"{orig_params.get('brake_force_n', 0):.0f} N")
+                    st.metric(
+                        "Rotor Diameter", f"{orig_params.get('rotor_diameter_mm', 0):.1f} mm")
+                    st.metric("Pad Type", orig_params.get(
+                        'pad_type', 'Unknown').title())
+                    st.metric(
+                        "Stopping Distance", f"{orig_params.get('stopping_distance_m', 0):.1f} m")
+                    st.metric("Brake Force",
+                              f"{orig_params.get('brake_force_n', 0):.0f} N")
 
                 with col2:
                     st.markdown("#### Workshop Parameters")
                     workshop_params = st.session_state.workshop_params
-                    st.metric("Rotor Diameter", f"{workshop_params.get('rotor_diameter_mm', 0):.1f} mm")
-                    st.metric("Pad Type", workshop_params.get('pad_type', 'Unknown').title())
-                    st.metric("Stopping Distance", f"{workshop_params.get('stopping_distance_m', 0):.1f} m")
-                    st.metric("Brake Force", f"{workshop_params.get('brake_force_n', 0):.0f} N")
+                    st.metric(
+                        "Rotor Diameter", f"{workshop_params.get('rotor_diameter_mm', 0):.1f} mm")
+                    st.metric("Pad Type", workshop_params.get(
+                        'pad_type', 'Unknown').title())
+                    st.metric(
+                        "Stopping Distance", f"{workshop_params.get('stopping_distance_m', 0):.1f} m")
+                    st.metric(
+                        "Brake Force", f"{workshop_params.get('brake_force_n', 0):.0f} N")
 
                 # Workshop simulation charts
                 if 'workshop_simulation' in st.session_state:
@@ -1502,44 +1636,328 @@ def main():
 
                     # Display summer charts as example
                     if 'summer_temperature' in workshop_charts:
-                        st.plotly_chart(workshop_charts['summer_temperature'], use_container_width=True)
+                        st.plotly_chart(
+                            workshop_charts['summer_temperature'], use_container_width=True)
 
                     if 'summer_wear' in workshop_charts:
-                        st.plotly_chart(workshop_charts['summer_wear'], use_container_width=True)
+                        st.plotly_chart(
+                            workshop_charts['summer_wear'], use_container_width=True)
 
                     # Performance comparison
                     if st.session_state.simulation_results:
                         st.markdown("### Performance Comparison")
 
                         # Get summer results for comparison
-                        orig_summer = [r for k, r in st.session_state.simulation_results.items() if k.startswith('summer')]
-                        workshop_summer = [r for k, r in st.session_state.workshop_simulation.items() if k.startswith('summer')]
+                        orig_summer = [r for k, r in st.session_state.simulation_results.items(
+                        ) if k.startswith('summer')]
+                        workshop_summer = [r for k, r in st.session_state.workshop_simulation.items(
+                        ) if k.startswith('summer')]
 
                         if orig_summer and workshop_summer:
-                            orig_avg_temp = np.mean([r['max_temperature'] for r in orig_summer])
-                            workshop_avg_temp = np.mean([r['max_temperature'] for r in workshop_summer])
+                            orig_avg_temp = np.mean(
+                                [r['max_temperature'] for r in orig_summer])
+                            workshop_avg_temp = np.mean(
+                                [r['max_temperature'] for r in workshop_summer])
 
-                            orig_avg_rul = np.mean([r['rul_km'] for r in orig_summer])
-                            workshop_avg_rul = np.mean([r['rul_km'] for r in workshop_summer])
+                            orig_avg_rul = np.mean(
+                                [r['rul_km'] for r in orig_summer])
+                            workshop_avg_rul = np.mean(
+                                [r['rul_km'] for r in workshop_summer])
 
                             col1, col2 = st.columns(2)
 
                             with col1:
                                 temp_change = workshop_avg_temp - orig_avg_temp
-                                st.metric("Avg Temperature Change", f"{temp_change:+.1f}°C")
+                                st.metric("Avg Temperature Change",
+                                          f"{temp_change:+.1f}°C")
 
                             with col2:
                                 rul_change = workshop_avg_rul - orig_avg_rul
-                                st.metric("Avg RUL Change", f"{rul_change:+,.0f} km")
+                                st.metric("Avg RUL Change",
+                                          f"{rul_change:+,.0f} km")
 
         else:
-            st.info("Please complete brake parameter calculation in the Analytics tab first.")
+            st.info(
+                "Please complete brake parameter calculation in the Analytics tab first.")
 
     with tabs[4]:
         st.header("Performance Reports & Analysis")
-
         if st.session_state.brake_params and st.session_state.simulation_results:
             # Pentagon Performance Chart (fixed wear resistance display)
+            
+                        # ===== GLB MODEL VIEWER ADDITION =====
+            st.markdown("---")
+            st.subheader("3D Brake Model Visualization")
+            st.markdown(
+                "Interactive 3D visualization of brake components with metallic materials and mesh overlay")
+
+
+            def get_model_data_reports(file_path):
+                """Convert GLB file to base64 for embedding"""
+                try:
+                    with open(file_path, "rb") as file:
+                        return base64.b64encode(file.read()).decode()
+                except FileNotFoundError:
+                    st.error(
+                        f"Model file '{file_path}' not found. Please ensure the file exists in the same directory as this app.")
+                    return None
+
+
+            def create_metallic_threejs_viewer_reports(model_data):
+                """Create Three.js viewer with metallic materials and mesh visualization"""
+                html_content = f"""
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="utf-8">
+                    <title>Brake Component Viewer</title>
+                    <style>
+                        body {{ margin: 0; padding: 0; overflow: hidden; background: #1a1a1a; }}
+                        #viewer {{ width: 100vw; height: 100vh; }}
+                        #controls {{
+                            position: absolute;
+                            top: 10px;
+                            left: 10px;
+                            z-index: 100;
+                            background: rgba(0,0,0,0.7);
+                            padding: 10px;
+                            border-radius: 5px;
+                            color: white;
+                        }}
+                        button {{
+                            margin: 5px;
+                            padding: 5px 10px;
+                            background: #333;
+                            color: white;
+                            border: none;
+                            border-radius: 3px;
+                            cursor: pointer;
+                        }}
+                        button:hover {{ background: #555; }}
+                    </style>
+                </head>
+                <body>
+                    <div id="controls">
+                        <button onclick="toggleWireframe()">Toggle Mesh</button>
+                        <button onclick="toggleMetallic()">Toggle Metallic</button>
+                        <button onclick="resetView()">Reset View</button>
+                    </div>
+                    <div id="viewer"></div>
+
+                    <script type="importmap">
+                    {{
+                        "imports": {{
+                            "three": "https://cdn.jsdelivr.net/npm/three@0.157.0/build/three.module.js",
+                            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.157.0/examples/jsm/"
+                        }}
+                    }}
+                    </script>
+
+                    <script type="module">
+                        import * as THREE from 'three';
+                        import {{ OrbitControls }} from 'three/addons/controls/OrbitControls.js';
+                        import {{ GLTFLoader }} from 'three/addons/loaders/GLTFLoader.js';
+
+                        let scene, camera, renderer, controls;
+                        let originalModel, meshModel;
+                        let isWireframeVisible = false;
+                        let isMetallicMode = true;
+
+                        scene = new THREE.Scene();
+                        scene.background = new THREE.Color(0x2a2a2a);
+
+                        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                        camera.position.set(5, 5, 5);
+
+                        renderer = new THREE.WebGLRenderer({{
+                            antialias: true,
+                            alpha: true
+                        }});
+                        renderer.setSize(window.innerWidth, window.innerHeight);
+                        renderer.shadowMap.enabled = true;
+                        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+                        renderer.toneMappingExposure = 1.2;
+                        renderer.outputEncoding = THREE.sRGBEncoding;
+                        document.getElementById('viewer').appendChild(renderer.domElement);
+
+                        controls = new OrbitControls(camera, renderer.domElement);
+                        controls.enableDamping = true;
+                        controls.dampingFactor = 0.05;
+                        controls.enableZoom = true;
+                        controls.autoRotate = true;
+                        controls.autoRotateSpeed = 1.0;
+
+                        const ambientLight = new THREE.AmbientLight(0x404040, 0.4);
+                        scene.add(ambientLight);
+
+                        const directionalLight1 = new THREE.DirectionalLight(0xffffff, 1.5);
+                        directionalLight1.position.set(5, 5, 5);
+                        directionalLight1.castShadow = true;
+                        directionalLight1.shadow.mapSize.width = 2048;
+                        directionalLight1.shadow.mapSize.height = 2048;
+                        scene.add(directionalLight1);
+
+                        const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.8);
+                        directionalLight2.position.set(-5, 3, -5);
+                        scene.add(directionalLight2);
+
+                        const directionalLight3 = new THREE.DirectionalLight(0x88ccff, 0.6);
+                        directionalLight3.position.set(0, -5, 0);
+                        scene.add(directionalLight3);
+
+                        const pointLight1 = new THREE.PointLight(0xffffff, 1, 100);
+                        pointLight1.position.set(10, 10, 10);
+                        scene.add(pointLight1);
+
+                        const pointLight2 = new THREE.PointLight(0xff6600, 0.8, 100);
+                        pointLight2.position.set(-10, -10, 10);
+                        scene.add(pointLight2);
+
+                        const loader = new THREE.CubeTextureLoader();
+                        const envMap = loader.load([
+                            'https://threejs.org/examples/textures/cube/SwedishRoyalCastle/px.jpg',
+                            'https://threejs.org/examples/textures/cube/SwedishRoyalCastle/nx.jpg',
+                            'https://threejs.org/examples/textures/cube/SwedishRoyalCastle/py.jpg',
+                            'https://threejs.org/examples/textures/cube/SwedishRoyalCastle/ny.jpg',
+                            'https://threejs.org/examples/textures/cube/SwedishRoyalCastle/pz.jpg',
+                            'https://threejs.org/examples/textures/cube/SwedishRoyalCastle/nz.jpg'
+                        ]);
+                        scene.environment = envMap;
+
+                        const metallicMaterial = new THREE.MeshStandardMaterial({{
+                            color: 0xc0c0c0,
+                            metalness: 0.9,
+                            roughness: 0.1,
+                            envMap: envMap,
+                            envMapIntensity: 1.5
+                        }});
+
+                        const wireframeMaterial = new THREE.MeshBasicMaterial({{
+                            color: 0x00ffff,
+                            wireframe: true,
+                            transparent: true,
+                            opacity: 0.8
+                        }});
+
+                        const gltfLoader = new GLTFLoader();
+                        const modelData = 'data:application/octet-stream;base64,{model_data}';
+
+                        gltfLoader.load(modelData, function(gltf) {{
+                            originalModel = gltf.scene.clone();
+                            meshModel = gltf.scene.clone();
+
+                            originalModel.traverse(function(child) {{
+                                if (child.isMesh) {{
+                                    child.material = metallicMaterial.clone();
+                                    child.castShadow = true;
+                                    child.receiveShadow = true;
+                                }}
+                            }});
+
+                            meshModel.traverse(function(child) {{
+                                if (child.isMesh) {{
+                                    child.material = wireframeMaterial.clone();
+                                    child.renderOrder = 1;
+                                }}
+                            }});
+
+                            const box = new THREE.Box3().setFromObject(originalModel);
+                            const center = box.getCenter(new THREE.Vector3());
+                            const size = box.getSize(new THREE.Vector3());
+                            const maxDim = Math.max(size.x, size.y, size.z);
+                            const scale = 8 / maxDim;
+
+                            [originalModel, meshModel].forEach(model => {{
+                                model.scale.multiplyScalar(scale);
+                                model.position.sub(center.clone().multiplyScalar(scale));
+                            }});
+
+                            scene.add(originalModel);
+                            meshModel.visible = false;
+                            scene.add(meshModel);
+
+                        }}, undefined, function(error) {{
+                            console.error('Error loading GLB model:', error);
+                        }});
+
+                        window.toggleWireframe = function() {{
+                            isWireframeVisible = !isWireframeVisible;
+                            if (meshModel) {{
+                                meshModel.visible = isWireframeVisible;
+                            }}
+                        }};
+
+                        window.toggleMetallic = function() {{
+                            isMetallicMode = !isMetallicMode;
+                            if (originalModel) {{
+                                originalModel.traverse(function(child) {{
+                                    if (child.isMesh) {{
+                                        if (isMetallicMode) {{
+                                            child.material = metallicMaterial.clone();
+                                        }} else {{
+                                            child.material = new THREE.MeshLambertMaterial({{
+                                                color: 0x888888
+                                            }});
+                                        }}
+                                    }}
+                                }});
+                            }}
+                        }};
+
+                        window.resetView = function() {{
+                            camera.position.set(5, 5, 5);
+                            controls.reset();
+                        }};
+
+                        function animate() {{
+                            requestAnimationFrame(animate);
+                            controls.update();
+                            renderer.render(scene, camera);
+                        }}
+                        animate();
+
+                        window.addEventListener('resize', function() {{
+                            camera.aspect = window.innerWidth / window.innerHeight;
+                            camera.updateProjectionMatrix();
+                            renderer.setSize(window.innerWidth, window.innerHeight);
+                        }});
+                    </script>
+                </body>
+                </html>
+                """
+                return html_content
+
+
+            # Load and display the default GLB model
+            default_model = "start_model_step.glb"
+
+            if os.path.exists(default_model):
+                with st.spinner("Loading 3D brake model..."):
+                    model_data = get_model_data_reports(default_model)
+
+                    if model_data:
+                        html_content = create_metallic_threejs_viewer_reports(model_data)
+
+                        # Display controls info
+                        st.info("""
+                        **3D Model Controls:**
+                        - **Toggle Mesh**: Show/hide wireframe overlay
+                        - **Toggle Metallic**: Switch between metallic and standard material
+                        - **Reset View**: Return to default camera position
+                        - **Mouse**: Left click + drag to rotate, scroll to zoom, right click + drag to pan
+                        """)
+
+                        # Display the 3D viewer
+                        st.components.v1.html(html_content, height=700)
+            else:
+                st.error(f"Default model file '{default_model}' not found!")
+                st.markdown(
+                    "Please ensure that `start_model_step.glb` is in the same directory as this Streamlit app.")
+
+            # ===== END GLB MODEL VIEWER ADDITION =====
+
+
             st.subheader("Overall Performance Pentagon")
 
             pentagon_chart = create_pentagon_performance_chart(
@@ -1552,13 +1970,16 @@ def main():
             st.subheader("Performance Insights")
 
             # Calculate insights
-            all_temps = [r['max_temperature'] for r in st.session_state.simulation_results.values()]
-            all_ruls = [r['rul_km'] for r in st.session_state.simulation_results.values()]
+            all_temps = [r['max_temperature']
+                for r in st.session_state.simulation_results.values()]
+            all_ruls = [r['rul_km']
+                for r in st.session_state.simulation_results.values()]
 
             col1, col2, col3, col4 = st.columns(4)
 
             with col1:
-                st.metric("Average Max Temperature", f"{np.mean(all_temps):.1f}°C")
+                st.metric("Average Max Temperature",
+                          f"{np.mean(all_temps):.1f}°C")
 
             with col2:
                 st.metric("Average RUL", f"{np.mean(all_ruls):,.0f} km")
@@ -1567,7 +1988,8 @@ def main():
                 st.metric("Best RUL Scenario", f"{max(all_ruls):,} km")
 
             with col4:
-                st.metric("Temperature Range", f"{min(all_temps):.1f}°C - {max(all_temps):.1f}°C")
+                st.metric("Temperature Range",
+                          f"{min(all_temps):.1f}°C - {max(all_temps):.1f}°C")
 
             # Find best and worst performing scenarios
             st.subheader("Scenario Performance Ranking")
@@ -1575,7 +1997,8 @@ def main():
             scenario_performance = []
             for scenario_key, result in st.session_state.simulation_results.items():
                 scenario = result['scenario']
-                performance_score = (result['rul_km'] / max(all_ruls)) * 50 + (1 - result['max_temperature'] / max(all_temps)) * 50
+                performance_score = (result['rul_km'] / max(all_ruls)) * 50 + (
+                    1 - result['max_temperature'] / max(all_temps)) * 50
 
                 scenario_performance.append({
                     'Scenario': f"{scenario['weather'].title()} - {scenario['wheel'].title()} - {scenario['driving'].title()}",
@@ -1586,8 +2009,10 @@ def main():
 
             # Sort by performance score
             scenario_df = pd.DataFrame(scenario_performance)
-            scenario_df['Score_Numeric'] = scenario_df['Performance Score'].str.replace('/100', '').astype(float)
-            scenario_df = scenario_df.sort_values('Score_Numeric', ascending=False)
+            scenario_df['Score_Numeric'] = scenario_df['Performance Score'].str.replace(
+                '/100', '').astype(float)
+            scenario_df = scenario_df.sort_values(
+                'Score_Numeric', ascending=False)
             scenario_df = scenario_df.drop('Score_Numeric', axis=1)
 
             st.dataframe(scenario_df, use_container_width=True)
@@ -1616,7 +2041,8 @@ def main():
                             5. Maintenance recommendations
                             """
 
-                            response = st.session_state.ai_agent.model.generate_content(analysis_prompt)
+                            response = st.session_state.ai_agent.model.generate_content(
+                                analysis_prompt)
                             st.success("AI Performance Analysis:")
                             st.write(response.text)
 
@@ -1629,12 +2055,16 @@ def main():
             col1, col2 = st.columns(2)
 
             with col1:
-                report_format = st.selectbox("Report Format", ["PDF (Text)", "Detailed Analysis"])
-                include_charts = st.checkbox("Include Performance Charts", value=True)
+                report_format = st.selectbox(
+                    "Report Format", ["PDF (Text)", "Detailed Analysis"])
+                include_charts = st.checkbox(
+                    "Include Performance Charts", value=True)
 
             with col2:
-                include_compliance = st.checkbox("Include Compliance Results", value=True)
-                include_ai_analysis = st.checkbox("Include AI Analysis", value=True)
+                include_compliance = st.checkbox(
+                    "Include Compliance Results", value=True)
+                include_ai_analysis = st.checkbox(
+                    "Include AI Analysis", value=True)
 
             if st.button("Generate & Download Report", type="primary"):
                 with st.spinner("Generating comprehensive brake analysis report..."):
@@ -1659,12 +2089,15 @@ def main():
                         st.error(f"❌ Error generating report: {str(e)}")
 
         else:
-            st.info("Please complete brake parameter calculation and simulation to generate reports.")
+            st.info(
+                "Please complete brake parameter calculation and simulation to generate reports.")
 
     # Footer
     st.markdown("---")
-    st.markdown("**ByteBrake AI** - Advanced Brake System Engineering with Compliance Validation")
-    st.markdown("Enhanced with seasonal analysis, AI optimization, interactive workshop, and speed pattern analysis")
+    st.markdown(
+        "**ByteBrake AI** - Advanced Brake System Engineering with Compliance Validation")
+    st.markdown(
+        "Enhanced with seasonal analysis, AI optimization, interactive workshop, and speed pattern analysis")
 
 if __name__ == "__main__":
     main()
